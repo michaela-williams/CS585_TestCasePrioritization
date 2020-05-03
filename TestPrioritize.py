@@ -2,6 +2,13 @@ from random import randint, randrange
 import time
 from math import floor
 
+class test:
+    def __init__(self, tName, tPass, tTime, tRatio):
+        self.name = tName
+        self.succeed = tPass,
+        self.duration = tTime
+        self.PRatio = tRatio
+
 def generateData(maxRange, minRand, maxRand, passRatio):
     generData = list()
     cur_testCase = 0
@@ -178,6 +185,7 @@ failRatio = failureRatio_Heuristic(data)
 failRatio_timeToFail = simulate_tests(failRatio[0])
 combine = combination_Heuristic(data, .7)
 combine_timeToFail = simulate_tests(combine[0])
+
 
 #print results
 print("Time to sort tests:")
