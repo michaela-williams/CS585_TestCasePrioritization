@@ -1,11 +1,5 @@
 import time
-from random import randint, randrange
-
-def readInData(filename):
-    if filename == 'testShareData.csv.rev':
-        data = read_testShare()
-    elif filename == 'TestData.csv':
-        data = read_generated()
+from random import randrange
         
 def read_testShare():
     print("Reading in testShareData. This may take some time.")
@@ -16,16 +10,33 @@ def read_testShare():
         while not read_data == '':
             cur_test = list()
             index = 0
-            while not read_data == '':
+            while index < 7:
                 extracted_data = read_data.partition(',')
                 if extracted_data[0] == '':
                     read_data = extracted_data[2]
                     continue
                 if index == 0:
                     cur_test.append("test_" + str(test_num))
+                if index == 3:
+                    if extracted_data[0] == 'PASSED':
+                        cur_test.append(True)
+                    else:
+                        cur_test.append(False)
                 elif index == 2 and extracted_data[0] != 'post':
                     break
-                elif not (index == 1 or index == 4 or index == 7 or index == 9):
+                elif index == 5:
+                    #convert milliseconds to seconds
+                    cur_test.append(float(extracted_data[0]) / 1000)
+                elif index == 6:
+                    size = extracted_data[0]
+                    if size == 'SMALL':
+                        size_int = 1
+                    elif size == 'MEDIUM':
+                        size_int = 2
+                    else:   #LARGE
+                        size_int = 3
+                    cur_test.append(size_int)
+                elif not (index == 1 or index == 2 or index == 4 or index == 6):
                     cur_test.append(extracted_data[0])
                     
                 read_data = extracted_data[2]
@@ -46,9 +57,18 @@ def read_generated():
             cur_test = list()
             for index in range(8):
                 extracted_data = read_data.partition(',')
-                if index == 7:
+                if index == 1:
+                    cur_test.append(int(extracted_data[0]))
+                elif index == 2 or index == 6:
+                    cur_test.append(float(extracted_data[0]))
+                elif index == 3 or index == 4 or index == 5:
+                    cur_test.append(int(extracted_data[0]))
+                elif index == 7:
                     extracted_data = extracted_data[0].partition('\n')
-                cur_test.append(extracted_data[0])
+                    cur_test.append(float(extracted_data[0]))
+                else:
+                    cur_test.append(extracted_data[0])
+                    
                 read_data = extracted_data[2]
                 
             tests.append(cur_test)
@@ -68,3 +88,58 @@ def random(testData):
     elapsed = 0 #value to keep the return format the same as other sort functions
     
     return (ordered, elapsed)
+
+def simulateTests(testQueue):
+    duration = 2
+    passed = 1
+    testsRun = 0
+    timeRun = 0
+    print(testQueue)
+    for curTest in testQueue:
+        testsRun += 1
+        timeRun += curTest[duration]
+        if not curTest[passed]:
+            print(curTest)
+            break
+        
+    report(testsRun, timeRun)
+        
+
+def smallest_sort(testData):
+    print("Sorting")
+    startTime = time.clock()
+    testQueue = list()
+    index = 3
+    while len(testData) > 0:
+        curSmallest = findMin(testData, index)
+        testQueue.append(testData[curSmallest])
+        testData.pop(curSmallest)
+    endTime = time.clock()
+    elapsed = endTime - startTime
+    
+    return (testQueue, elapsed)
+
+def report(testsRun, timeRun):
+    print("Ran ", testsRun, "tests for ", timeRun, " seconds before failing.")
+
+def findMin(data, index):
+    curMin = 100000000
+    curMinIndex = -1
+    curIndex = 0
+    for num in data:
+        if num[index] < curMin:
+            curMin = num[index]
+            curMinIndex = curIndex
+        curIndex += 1
+        
+    return curMinIndex
+
+
+
+#testing
+cur_tests = read_testShare()
+#cur_tests = read_generated()
+#print (cur_tests)
+smallest = smallest_sort(cur_tests)
+#print(smallest)
+simulated = simulateTests(smallest[0])
