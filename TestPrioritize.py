@@ -3,7 +3,6 @@ from random import randrange
 from copy import deepcopy
 
 maxNumTests = 300000
-sortSize = 10000
         
 def read_testShare():
     print("Reading in testShareData. This may take some time.")
@@ -103,7 +102,7 @@ def random(origData):
     
     return (ordered, elapsed)
 
-def smallest_sort(origData):
+def smallest_sort(origData, sortSize):
     startTime = time.clock()
     testQueue = list()
     index = 3
@@ -113,9 +112,6 @@ def smallest_sort(origData):
         start_index = 0
         end_index = sortSize        
         while start_index < len(testData) - 1:
-            if len(testData) == 1:
-                testQueue.append(testData[0])  
-                break
             if (end_index >= len(testData)):
                 end_index = len(testData) - 1
             curSmallest = findMin(testData, index, start_index, end_index)
@@ -135,7 +131,7 @@ def smallest_sort(origData):
     return (testQueue, elapsed)
 
 #sort by highest fail ratio
-def failRatio_sort(origData):
+def failRatio_sort(origData, sortSize):
     startTime = time.clock()
     testQueue = list()
     index = 4
@@ -163,7 +159,7 @@ def failRatio_sort(origData):
                             
     return (testQueue, elapsed)                 
 
-def timeFailed_sort(origData):
+def timeFailed_sort(origData, sortSize):
     startTime = time.clock()
     testQueue = list()
     index = 6
@@ -191,7 +187,7 @@ def timeFailed_sort(origData):
     
     return (testQueue, elapsed)
 
-def timeRun_sort(origData):
+def timeRun_sort(origData, sortSize):
     startTime = time.clock()
     testQueue = list()
     index = 5
@@ -203,9 +199,9 @@ def timeRun_sort(origData):
         while start_index < len(testData) - 1:
             if (end_index >= len(testData)):
                 end_index = len(testData) - 1
-            curRecent = findMin(testData, index, start_index, end_index)
-            testQueue.append(testData[curRecent])
-            testData.pop(curRecent)
+            curOldest = findMax(testData, index, start_index, end_index)
+            testQueue.append(testData[curOldest])
+            testData.pop(curOldest)
             start_index = end_index
             end_index += sortSize
         
@@ -219,7 +215,7 @@ def timeRun_sort(origData):
     
     return (testQueue, elapsed)    
 
-def combination_sort(origData):
+def combination_sort(origData, sortSize):
     startTime = time.clock()
     testQueue = list()
     testData = deepcopy(origData)
@@ -320,45 +316,79 @@ def findBest(data, sortBy, tiebreaker, start_index, end_index):
                 
     return curBestIndex
 
-#testing
-#cur_tests = read_testShare()
-cur_tests = read_generated()
-#print(cur_tests)
-#Tests that can be run on both read_generated() and read_testShare()
+def test_googleCodeData(sortSize):
+    print("Testing: googleCodeData")
+    print()
+    
+    cur_tests = read_testShare()
 
-simulateTests(cur_tests)
-print()
+    print("sortSize: ", sortSize)
+    print("Original test order: ")
+    simulateTests(cur_tests)
+    print()
+    
+    print("Random test order: ")
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    print()
+    
+    print("Test sorted by smallest size: ")
+    smallest = smallest_sort(cur_tests, sortSize)
+    simulateTests(smallest[0])
+    report_sort(smallest[1], "smallest_sort")
+    print()
+    
+def test_generatedData(sortSize):
+    print("Testing: generatedData")
+    print()
+    
+    cur_tests = read_generated()
+    
+    print("sortSize = ", sortSize)
+    print()
+    
+    print("Original order: ")
+    simulateTests(cur_tests)
+    print()
+    print("Random order: ")
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    rand = random(cur_tests)
+    simulateTests(rand[0])
+    print()
+    
+    print("Sort by smallest size: ")
+    smallest = smallest_sort(cur_tests, sortSize)
+    simulateTests(smallest[0])
+    report_sort(smallest[1], "smallest_sort")
+    print()        
 
-rand = random(cur_tests)
-simulateTests(rand[0])
-rand = random(cur_tests)
-simulateTests(rand[0])
-rand = random(cur_tests)
-simulateTests(rand[0])
-print()
-
-smallest = smallest_sort(cur_tests)
-simulateTests(smallest[0])
-report_sort(smallest[1], "smallest_sort")
-print()
-
-#Tests that can only be run on read_generated()
-
-failRatio = failRatio_sort(cur_tests)
-simulateTests(failRatio[0])
-report_sort(failRatio[1], "failRatio_sort")
-print()
-
-timeFail = timeFailed_sort(cur_tests)
-simulateTests(timeFail[0])
-report_sort(timeFail[1], "timeFail_sort")
-print()
-
-timeRun = timeRun_sort(cur_tests)
-simulateTests(timeFail[0])
-report_sort(timeRun[1], "timeRun_sort")
-print()
-
-combin = combination_sort(cur_tests)
-simulateTests(combin[0])
-report_sort(combin[1], "combination_sort")
+    print("Sort by highest fail ratio: ")
+    failRatio = failRatio_sort(cur_tests, sortSize)
+    simulateTests(failRatio[0])
+    report_sort(failRatio[1], "failRatio_sort")
+    print()
+    
+    print("Sort by most recently failed test: ")
+    timeFail = timeFailed_sort(cur_tests, sortSize)
+    simulateTests(timeFail[0])
+    report_sort(timeFail[1], "timeFail_sort")
+    print()
+    
+    print("Sort by test that hasn't been run for the longest: ")
+    timeRun = timeRun_sort(cur_tests, sortSize)
+    simulateTests(timeFail[0])
+    report_sort(timeRun[1], "timeRun_sort")
+    print()
+    
+    print("Sort by smallest size, break ties with highest fail ratio: ")
+    combin = combination_sort(cur_tests, sortSize)
+    simulateTests(combin[0])
+    report_sort(combin[1], "combination_sort")        
+    print()
