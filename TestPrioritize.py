@@ -1,5 +1,8 @@
 import time
 from random import randrange
+
+maxNumTests = 300000
+sortSize = 1000
         
 def read_testShare():
     print("Reading in testShareData. This may take some time.")
@@ -7,7 +10,7 @@ def read_testShare():
     with open('testShareData.csv.rev') as file:
         test_num = 0
         read_data = file.readline()
-        while not read_data == '':
+        for line in range(maxNumTests):
             cur_test = list()
             index = 0
             while index < 7:
@@ -17,7 +20,7 @@ def read_testShare():
                     continue
                 if index == 0:
                     cur_test.append("test_" + str(test_num))
-                if index == 3:
+                elif index == 3:
                     if extracted_data[0] == 'PASSED':
                         cur_test.append(True)
                     else:
@@ -46,7 +49,7 @@ def read_testShare():
                 
             test_num += 1
             read_data = file.readline()
-            
+    
     return tests
     
 def read_generated():
@@ -106,40 +109,63 @@ def simulateTests(testQueue):
         
 
 def smallest_sort(testData):
-    print("Sorting")
     startTime = time.clock()
     testQueue = list()
     index = 3
+    
     while len(testData) > 0:
-        curSmallest = findMin(testData, index)
-        testQueue.append(testData[curSmallest])
-        testData.pop(curSmallest)
+        start_index = 0
+        end_index = sortSize        
+        while start_index < len(testData) - 1:
+            if len(testData) == 1:
+                testQueue.append(testData[0])  
+                break
+            if (end_index >= len(testData)):
+                end_index = len(testData) - 1
+            curSmallest = findMin(testData, index, start_index, end_index)
+            testQueue.append(testData[curSmallest])
+            testData.pop(curSmallest)
+            start_index = end_index
+            end_index += sortSize
+            
+        if (len(testData) == 1):
+            testQueue.append(testData[0])
+            testQueue.pop()
+            break
+        
     endTime = time.clock()
     elapsed = endTime - startTime
     
     return (testQueue, elapsed)
 
 def report(testsRun, timeRun):
-    print("Ran ", testsRun, "tests for ", timeRun, " seconds before failing.")
+    timeInMin = timeRun / 60
+    print("Ran ", testsRun, "tests for ", timeInMin, " minutes before failing.")
 
-def findMin(data, index):
+def report_sort(timeToSort, name):
+    units = "seconds"
+    if timeToSort > 60:
+        timeToSort = timeToSort / 60 #convert to minutes
+        units = "minutes"
+    print(name, " took ", timeToSort, " ", units)
+
+def findMin(data, index, start_index, end_index):
     curMin = 100000000
     curMinIndex = -1
-    curIndex = 0
-    for num in data:
-        if num[index] < curMin:
-            curMin = num[index]
+    curIndex = start_index
+    while curIndex < end_index:
+        if data[curIndex][index] < curMin:
+            curMin = data[curIndex][index]
             curMinIndex = curIndex
         curIndex += 1
         
     return curMinIndex
 
-
-
 #testing
 cur_tests = read_testShare()
 #cur_tests = read_generated()
-#print (cur_tests)
+
 smallest = smallest_sort(cur_tests)
-#print(smallest)
+report_sort(smallest, "smallest_sort")
 simulated = simulateTests(smallest[0])
+
