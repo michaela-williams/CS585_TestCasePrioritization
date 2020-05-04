@@ -2,7 +2,7 @@ import time
 from random import randrange
 from copy import deepcopy
 
-maxNumTests = 300000
+maxNumTests = 30000
         
 def read_testShare():
     print("Reading in testShareData. This may take some time.")
@@ -392,3 +392,21 @@ def test_generatedData(sortSize):
     simulateTests(combin[0])
     report_sort(combin[1], "combination_sort")        
     print()
+    
+def averageRandom(tests, numRuns):
+    totalTime = 0
+    totalTests = 0
+    passed = 1
+    duration = 2
+    for curRun in range(numRuns):
+        rand = random(tests)
+        for curTest in rand[0]:
+            totalTests += 1
+            totalTime += curTest[duration]
+            if not curTest[passed]:
+                break
+    avg_tests = totalTests / numRuns
+    avg_time = totalTime / numRuns
+    print("avg_test amount: ", avg_tests)
+    print("avg_time: ", avg_time)
+    
