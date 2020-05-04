@@ -3,7 +3,7 @@ from random import randrange
 from copy import deepcopy
 
 maxNumTests = 300000
-sortSize = 1000
+sortSize = 10000
         
 def read_testShare():
     print("Reading in testShareData. This may take some time.")
@@ -55,6 +55,7 @@ def read_testShare():
     
 def read_generated():
     tests = list()
+    failed = 0
     with open('TestData.csv') as file:  
         read_data = file.readline()
         while not read_data == '':
@@ -64,6 +65,8 @@ def read_generated():
                 extracted_data = read_data.partition(',')
                 if index == 1:
                     cur_test.append(int(extracted_data[0]))
+                    if not int(extracted_data[0]):
+                        failed += 1
                 elif index == 2 or index == 6:
                     cur_test.append(float(extracted_data[0]))
                 elif index == 3:
@@ -71,7 +74,6 @@ def read_generated():
                 elif index == 4:
                     failRatio = float(extracted_data[0])
                 elif index == 5:
-                    print(extracted_data[0])
                     failRatio = failRatio / float(extracted_data[0])
                     cur_test.append(failRatio)
                 elif index == 7:
@@ -84,7 +86,7 @@ def read_generated():
                 
             tests.append(cur_test)
             read_data = file.readline()
-            
+        print(failed)
     return tests
 
 #test order randomly selected
@@ -143,16 +145,13 @@ def failRatio_sort(origData):
         start_index = 0
         end_index = sortSize
         while start_index < len(testData) - 1:
-            if len(testData) == 1:
-                testQueue.append(testData[0])
-                break
-        if (end_index >= len(testData)):
-            end_index = len(testData) - 1
-        curLargest = findMax(testData, index, start_index, end_index)
-        testQueue.append(testData[curLargest])
-        testData.pop(curLargest)
-        start_index = end_index
-        end_index += sortSize
+            if (end_index >= len(testData)):
+                end_index = len(testData) - 1
+            curLargest = findMax(testData, index, start_index, end_index)
+            testQueue.append(testData[curLargest])
+            testData.pop(curLargest)
+            start_index = end_index
+            end_index += sortSize
         
         if (len(testData) == 1):
             testQueue.append(testData[0])
@@ -162,8 +161,94 @@ def failRatio_sort(origData):
     endTime = time.clock()
     elapsed = endTime - startTime
                             
-     return (testQueue, elapsed)                        
+    return (testQueue, elapsed)                 
 
+def timeFailed_sort(origData):
+    startTime = time.clock()
+    testQueue = list()
+    index = 6
+    testData = deepcopy(origData)
+    
+    while len(testData) > 0:
+        start_index = 0
+        end_index = sortSize
+        while start_index < len(testData) - 1:
+            if (end_index >= len(testData)):
+                end_index = len(testData) - 1
+            curRecent = findMin(testData, index, start_index, end_index)
+            testQueue.append(testData[curRecent])
+            testData.pop(curRecent)
+            start_index = end_index
+            end_index += sortSize
+        
+        if (len(testData) == 1):
+            testQueue.append(testData[0])
+            testQueue.pop()
+            break
+        
+    endTime = time.clock()
+    elapsed = endTime - startTime
+    
+    return (testQueue, elapsed)
+
+def timeRun_sort(origData):
+    startTime = time.clock()
+    testQueue = list()
+    index = 5
+    testData = deepcopy(origData)
+    
+    while len(testData) > 0:
+        start_index = 0
+        end_index = sortSize
+        while start_index < len(testData) - 1:
+            if (end_index >= len(testData)):
+                end_index = len(testData) - 1
+            curRecent = findMin(testData, index, start_index, end_index)
+            testQueue.append(testData[curRecent])
+            testData.pop(curRecent)
+            start_index = end_index
+            end_index += sortSize
+        
+        if len(testData) == 1:
+            testQueue.append(testData[0])
+            testData.pop()
+            break        
+        
+    endTime = time.clock()
+    elapsed = endTime - startTime
+    
+    return (testQueue, elapsed)    
+
+def combination_sort(origData):
+    startTime = time.clock()
+    testQueue = list()
+    testData = deepcopy(origData)
+    ratioIndex = 4
+    sizeIndex = 3
+    
+    while len(testData) > 0:
+        start_index = 0
+        end_index = sortSize
+        while start_index < len(testData) - 1:
+            if end_index >= len(testData):
+                end_index = len(testData) - 1
+            nextTest = findBest(testData, sizeIndex, \
+                                ratioIndex, start_index, end_index)
+            testQueue.append(testData[nextTest])
+            testData.pop(nextTest)
+            start_index = end_index
+            end_index += sortSize
+            
+        if len(testData) == 1:
+            testQueue.append(testData[0])
+            testData.pop()
+            break
+        
+    endTime = time.clock()
+    elapsed = endTime - startTime
+            
+    return (testQueue, elapsed)
+    
 def simulateTests(testQueue):
     duration = 2
     passed = 1
@@ -210,7 +295,7 @@ def findMax(data, index, start_index, end_index):
     curMax = -1
     curMaxIndex = -1
     curIndex = start_index
-    while cur_index < end_index:
+    while curIndex < end_index:
         if data[curIndex][index] < curMax:
             curMax = data[curIndex][index]
             curMaxIndex = curIndex
@@ -218,22 +303,62 @@ def findMax(data, index, start_index, end_index):
         
     return curMaxIndex
 
+def findBest(data, sortBy, tiebreaker, start_index, end_index):
+    curBest = -1
+    curBestIndex = -1
+    curIndex = start_index
+    while curIndex < end_index:
+        if data[curIndex][sortBy] > curBest:
+            curBest = data[curIndex][sortBy]
+            curBestIndex = curIndex
+        elif data[curIndex][sortBy] == curBest:
+            if data[curBestIndex][tiebreaker] < data[curIndex][tiebreaker]:
+                curBest = data[curIndex][sortBy]
+                curBestIndex = curIndex
+        
+        curIndex += 1
+                
+    return curBestIndex
+
 #testing
 #cur_tests = read_testShare()
 cur_tests = read_generated()
-print(cur_tests)
+#print(cur_tests)
+#Tests that can be run on both read_generated() and read_testShare()
 
-#simulateTests(cur_tests)
+simulateTests(cur_tests)
+print()
 
-'''
 rand = random(cur_tests)
 simulateTests(rand[0])
 rand = random(cur_tests)
 simulateTests(rand[0])
 rand = random(cur_tests)
 simulateTests(rand[0])
-'''
-#smallest = smallest_sort(cur_tests)
-#report_sort(smallest[1], "smallest_sort")
-#simulateTests(smallest[0])
+print()
 
+smallest = smallest_sort(cur_tests)
+simulateTests(smallest[0])
+report_sort(smallest[1], "smallest_sort")
+print()
+
+#Tests that can only be run on read_generated()
+
+failRatio = failRatio_sort(cur_tests)
+simulateTests(failRatio[0])
+report_sort(failRatio[1], "failRatio_sort")
+print()
+
+timeFail = timeFailed_sort(cur_tests)
+simulateTests(timeFail[0])
+report_sort(timeFail[1], "timeFail_sort")
+print()
+
+timeRun = timeRun_sort(cur_tests)
+simulateTests(timeFail[0])
+report_sort(timeRun[1], "timeRun_sort")
+print()
+
+combin = combination_sort(cur_tests)
+simulateTests(combin[0])
+report_sort(combin[1], "combination_sort")
