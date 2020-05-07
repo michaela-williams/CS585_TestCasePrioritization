@@ -1,11 +1,50 @@
 import time
 from random import randrange
 from copy import deepcopy
+from math import ceil
 
 maxNumTests = 30000
+numRuns_randomAverage = 100
+percentFailures = .90
+sortSizeTestVals = [1000, 500, 100, 50]
+
+def runAllTests(): 
+    runAllTests_googleCodeData()
+    runAllTests_generatedData()
+    
+def runAllTests_googleCodeData():
+    cur_tests = read_testShare()
+    print()
+    print("Testing Google Code data: ")
+    testStats = getTestStats(cur_tests)
+    
+    print()
+    print("Original test order: ")
+    simulateTests(cur_tests, testStats)
+    print()    
+    averageRandom(cur_tests, numRuns_randomAverage)
+    print()
+    
+    for curSize in sortSizeTestVals:
+        test_googleCodeData(cur_tests, testStats, curSize)
+        
+def runAllTests_generatedData():
+    cur_tests = read_generated()
+    print()
+    print("Testing generated data: ")
+    testStats = getTestStats(cur_tests)
+    
+    print()
+    print("Original test order: ")
+    simulateTests(cur_tests, testStats)
+    print()    
+    averageRandom(cur_tests, numRuns_randomAverage)
+    print()
+    
+    for curSize in sortSizeTestVals:
+        test_generatedData(cur_tests, testStats, curSize)
         
 def read_testShare():
-    print("Reading in testShareData. This may take some time.")
     tests = list()
     with open('testShareData.csv.rev') as file:
         test_num = 0
@@ -85,7 +124,6 @@ def read_generated():
                 
             tests.append(cur_test)
             read_data = file.readline()
-        print(failed)
     return tests
 
 #test order randomly selected
@@ -245,19 +283,26 @@ def combination_sort(origData, sortSize):
             
     return (testQueue, elapsed)
     
-def simulateTests(testQueue):
+def simulateTests(testQueue, testStats):
     duration = 2
     passed = 1
     testsRun = 0
     timeRun = 0
+    mostRecentFail = 0
+    numFails = 0
+    failCap = ceil(testStats[1] * percentFailures)
+    
     for curTest in testQueue:
         testsRun += 1
         timeRun += curTest[duration]
         if not curTest[passed]:
-            break
+            mostRecentFail = timeRun
+            numFails += 1
+            if numFails == failCap:
+                break
         
-    report(testsRun, timeRun)
-
+    report(testsRun, mostRecentFail)
+    
 def report(testsRun, timeRun):
     units = "seconds"
     if timeRun > 60:
@@ -266,7 +311,10 @@ def report(testsRun, timeRun):
     if timeRun > 60:
         timeRun = timeRun / 60
         units = "hours"
-    print("Ran ", testsRun, "tests for ", timeRun, " ", units, " before failing.")
+    
+    percent = percentFailures * 100
+    print("Detected", percent, "% of test failures in ", testsRun, "tests and", \
+          timeRun, " ", units)
 
 def report_sort(timeToSort, name):
     units = "seconds"
@@ -316,80 +364,46 @@ def findBest(data, sortBy, tiebreaker, start_index, end_index):
                 
     return curBestIndex
 
-def test_googleCodeData(sortSize):
-    print("Testing: googleCodeData")
-    print()
-    
-    cur_tests = read_testShare()
-
+def test_googleCodeData(testData, testStats, sortSize):
     print("sortSize: ", sortSize)
-    print("Original test order: ")
-    simulateTests(cur_tests)
-    print()
-    
-    print("Random test order: ")
-    rand = random(cur_tests)
-    simulateTests(rand[0])
-    rand = random(cur_tests)
-    simulateTests(rand[0])
-    rand = random(cur_tests)
-    simulateTests(rand[0])
-    print()
     
     print("Test sorted by smallest size: ")
-    smallest = smallest_sort(cur_tests, sortSize)
-    simulateTests(smallest[0])
+    smallest = smallest_sort(testData, sortSize)
+    simulateTests(smallest[0], testStats)
     report_sort(smallest[1], "smallest_sort")
     print()
     
-def test_generatedData(sortSize):
-    print("Testing: generatedData")
-    print()
-    
-    cur_tests = read_generated()
-    
+def test_generatedData(cur_tests, testStats, sortSize):
     print("sortSize = ", sortSize)
-    print()
-    
-    print("Original order: ")
-    simulateTests(cur_tests)
-    print()
-    print("Random order: ")
-    rand = random(cur_tests)
-    simulateTests(rand[0])
-    rand = random(cur_tests)
-    simulateTests(rand[0])
-    rand = random(cur_tests)
-    simulateTests(rand[0])
     print()
     
     print("Sort by smallest size: ")
     smallest = smallest_sort(cur_tests, sortSize)
-    simulateTests(smallest[0])
+    simulateTests(smallest[0], testStats)
     report_sort(smallest[1], "smallest_sort")
     print()        
 
     print("Sort by highest fail ratio: ")
     failRatio = failRatio_sort(cur_tests, sortSize)
-    simulateTests(failRatio[0])
+    simulateTests(failRatio[0], testStats)
     report_sort(failRatio[1], "failRatio_sort")
     print()
     
     print("Sort by most recently failed test: ")
     timeFail = timeFailed_sort(cur_tests, sortSize)
-    simulateTests(timeFail[0])
+    simulateTests(timeFail[0], testStats)
     report_sort(timeFail[1], "timeFail_sort")
     print()
     
     print("Sort by test that hasn't been run for the longest: ")
     timeRun = timeRun_sort(cur_tests, sortSize)
-    simulateTests(timeFail[0])
+    simulateTests(timeFail[0], testStats)
     report_sort(timeRun[1], "timeRun_sort")
     print()
     
     print("Sort by smallest size, break ties with highest fail ratio: ")
     combin = combination_sort(cur_tests, sortSize)
-    simulateTests(combin[0])
+    simulateTests(combin[0], testStats)
     report_sort(combin[1], "combination_sort")        
     print()
     
@@ -398,15 +412,43 @@ def averageRandom(tests, numRuns):
     totalTests = 0
     passed = 1
     duration = 2
+    
+    testStats = getTestStats(tests)
+    failCap = ceil(testStats[1] * percentFailures)
+    mostRecentFail = 0
+    numFails = 0
+    
     for curRun in range(numRuns):
         rand = random(tests)
         for curTest in rand[0]:
             totalTests += 1
             totalTime += curTest[duration]
             if not curTest[passed]:
-                break
+                mostRecentFail = totalTime
+                numFails += 1
+                if numFails == failCap:
+                    break
+                
     avg_tests = totalTests / numRuns
     avg_time = totalTime / numRuns
-    print("avg_test amount: ", avg_tests)
-    print("avg_time: ", avg_time)
+    avg_time_hrs = avg_time / 60 ** 2
     
+    print("In ", numRuns, " runs, random detected ", percentFailures * 100, \
+          "% of", " test failures in ", avg_tests, " tests and ", avg_time_hrs, \
+          " hours.")
+          
+def getTestStats(testData):
+    numFails = 0
+    numTests = 0
+    passed = 1
+    for curTest in testData:
+        if not curTest[passed]:
+            numFails += 1
+        numTests += 1
+        
+    print("Total number of tests: ", numTests)
+    print("Number of failing tests: ", numFails)
+    
+    return (numTests, numFails)
+
+runAllTests()
