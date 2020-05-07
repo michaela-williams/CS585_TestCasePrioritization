@@ -5,7 +5,8 @@ from math import ceil
 
 maxNumTests = 30000
 numRuns_randomAverage = 100
-percentFailures = .90
+percentFailures = .9
+
 sortSizeTestVals = [1000, 500, 100, 50]
 
 def runAllTests(): 
@@ -433,7 +434,7 @@ def averageRandom(tests, numRuns):
     avg_time = totalTime / numRuns
     avg_time_hrs = avg_time / 60 ** 2
     
-    print("In ", numRuns, " runs, random detected ", percentFailures * 100, \
+    print("In ", numRuns, " runs, random detected on average", percentFailures * 100, \
           "% of", " test failures in ", avg_tests, " tests and ", avg_time_hrs, \
           " hours.")
           
